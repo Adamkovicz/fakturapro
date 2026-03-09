@@ -306,7 +306,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
       <div class="tc">
         <div class="tb-bar"><span class="tb-title">Poslední faktury</span><button class="btn btn-g btn-sm" onclick="sp('invs')">Zobrazit vše →</button></div>
-        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Splatnost</th><th>Částka</th><th>Stav</th></tr></thead><tbody id="rtb"></tbody></table>
+        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Splatnost</th><th style="text-align:right;min-width:110px;padding-right:16px">Částka</th><th>Stav</th></tr></thead><tbody id="rtb"></tbody></table>
       </div>
     </div>
 
@@ -324,7 +324,7 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="sb"><span>🔍</span><input placeholder="Hledat fakturu, klienta…" oninput="doS(this.value)"></div>
           <span class="chip" id="icount">0 faktur</span>
         </div>
-        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Vystaveno</th><th class="hm">Splatnost</th><th>Částka</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="itb"></tbody></table>
+        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Vystaveno</th><th class="hm">Splatnost</th><th style="text-align:right;min-width:110px;padding-right:16px">Částka</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="itb"></tbody></table>
       </div>
     </div>
 
@@ -654,7 +654,7 @@ function irow(i,act){
     <td>${i.clientName||'—'}</td>
     ${act?`<td class='hm' style='color:var(--text2)'>${i.date||''}</td>`:''}
     <td class='hm' style='color:${i.status==="overdue"?"var(--red)":"var(--text2)"}'>${i.dueDate||''}</td>
-    <td><strong>${fm(i.total,i.currency)}</strong></td>
+    <td style="text-align:right;white-space:nowrap;padding-right:16px"><strong>${fm(i.total,i.currency)}</strong></td>
     <td>${sel}</td>
     ${act?`<td><div style='display:flex;gap:5px;flex-wrap:wrap'>
       <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
