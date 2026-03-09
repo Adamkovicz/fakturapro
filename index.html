@@ -1024,12 +1024,31 @@ function expPDF(id){
 
   if(qrTarget&&s.sib){
     const spdText='SPD*1.0*ACC:'+s.sib.replace(/\s/g,'')+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+(inv.number||'')+'*MSG:'+(inv.clientName||'').substring(0,35);
-    const qrImg = genQR(qrTarget, spdText, 80);
-    // Wait for image to load before rendering PDF
-    qrImg.onload = function(){ setTimeout(doRender, 200); };
-    qrImg.onerror = function(){ doRender(); };
-    // Fallback timeout in case events don't fire
-    setTimeout(()=>{ if(document.body.contains(tpl)) doRender(); }, 2000);
+    const qrUrl='https://chart.googleapis.com/chart?cht=qr&chs=80x80&chl='+encodeURIComponent(spdText)+'&chco=2d5a3d&chf=bg,s,ffffff&chld=M|1';
+    // Fetch QR as base64 to avoid html2canvas CORS issues
+    fetch(qrUrl)
+      .then(r=>r.blob())
+      .then(blob=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(blob);}))
+      .then(b64=>{
+        const img=document.createElement('img');
+        img.src=b64; img.width=80; img.height=80;
+        qrTarget.innerHTML=''; qrTarget.appendChild(img);
+        setTimeout(doRender,200);
+      })
+      .catch(()=>{
+        // Fallback: try qrserver
+        const url2='https://api.qrserver.com/v1/create-qr-code/?size=80x80&data='+encodeURIComponent(spdText)+'&color=2d5a3d&bgcolor=ffffff&ecc=M';
+        fetch(url2)
+          .then(r=>r.blob())
+          .then(blob=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(blob);}))
+          .then(b64=>{
+            const img=document.createElement('img');
+            img.src=b64; img.width=80; img.height=80;
+            qrTarget.innerHTML=''; qrTarget.appendChild(img);
+            setTimeout(doRender,200);
+          })
+          .catch(()=>doRender());
+      });
   } else {
     doRender();
   }
