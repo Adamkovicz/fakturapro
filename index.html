@@ -875,7 +875,7 @@ function showDet(id){
       ${s.sib||s.siban?`<div class="bank-bar">
   💳 <strong>Platební údaje</strong><br>
   ${s.sib?`Číslo účtu: <strong>${s.sib}</strong>${s.sb2?' &nbsp;·&nbsp; '+s.sb2:''}<br>`:''}
-  Variabilní symbol: <strong>${inv.number}</strong><br>
+  Variabilní symbol: <strong>${(inv.number||"").replace(/\D/g,"")}</strong><br>
   ${(inv.currency&&inv.currency!=='CZK'&&s.siban)?`IBAN: <strong>${s.siban}</strong><br>`:''}
   Způsob platby: <strong>Bankovní převod</strong>
 </div>`:''}
@@ -884,9 +884,12 @@ function showDet(id){
         <div id="qr-box-${inv.id}">
           ${s.sib?`<div style='font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px'>QR Platba</div><div id='qr-${inv.id}'></div>`:''}
         </div>
-        <div style="display:flex;gap:16px;align-items:flex-end">
-          ${sett.sigData?`<div style='text-align:center'><img src='${sett.sigData}' style='max-height:80px;max-width:170px'><div style='font-size:10px;color:var(--text3);margin-top:3px'>Podpis</div></div>`:''}
-          ${sett.stampData?`<div style='text-align:center'><img src='${sett.stampData}' style='max-height:90px;max-width:170px'></div>`:''}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          ${(sett.sigData||sett.stampData)?`<div style='font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em'>Razítko a podpis</div>`:''}
+          <div style="display:flex;gap:16px;align-items:flex-end">
+            ${sett.sigData?`<div style='text-align:center'><img src='${sett.sigData}' style='max-height:120px;max-width:255px'><div style='font-size:10px;color:var(--text3);margin-top:3px'>Podpis</div></div>`:''}
+            ${sett.stampData?`<div style='text-align:center'><img src='${sett.stampData}' style='max-height:135px;max-width:255px'></div>`:''}
+          </div>
         </div>
       </div>
       ${s.sft?`<div style='margin-top:14px;font-size:12px;color:var(--text3);border-top:1px solid var(--border);padding-top:11px'>${s.sft}</div>`:''}
@@ -896,7 +899,7 @@ function showDet(id){
     const qrEl=document.getElementById('qr-'+inv.id);
     if(qrEl&&s.sib){
       const qrAcc=(inv.currency&&inv.currency!=='CZK'&&s.siban?s.siban:s.sib||'').replace(/\s/g,'');
-      if(qrAcc){const spdText='SPD*1.0*ACC:'+qrAcc+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+(inv.number||'')+'*MSG:'+(inv.clientName||'').substring(0,35);genQR(qrEl, spdText, 90);}
+      if(qrAcc){const spdText='SPD*1.0*ACC:'+qrAcc+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+((inv.number||'').replace(/\D/g,''))+'*MSG:'+(inv.clientName||'').substring(0,35);genQR(qrEl, spdText, 90);}
     }
   },150);
   document.getElementById('dact').innerHTML=`
@@ -950,10 +953,7 @@ function expPDF(id){
         <div style="font-size:9px;font-weight:700;color:#9c8e7e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Dodavatel</div>
         <div style="font-size:15px;font-weight:700;color:#1a1710;margin-bottom:5px;font-family:Georgia,serif">${s.sn||'—'}</div>
         <div style="font-size:11.5px;color:#6a6050;line-height:1.8">${suppLines}</div>
-        ${(s.sib||s.siban)?`<div style="margin-top:8px;font-size:11px;color:#6a6050;line-height:1.8">
-  ${s.sib?`Číslo účtu: <strong style="color:#1a1710">${s.sib}</strong><br>`:''}
-  ${s.sb2?`${s.sb2}<br>`:''}
-</div>`:''}
+        ${(s.sib||s.siban)?`<div style="font-size:11.5px;color:#6a6050;line-height:1.8">${s.sib?'Číslo účtu: '+s.sib:''}${s.sb2?'<br>'+s.sb2:''}</div>`:''}
       </div>
       <div>
         <div style="font-size:9px;font-weight:700;color:#9c8e7e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Odběratel</div>
@@ -977,14 +977,14 @@ function expPDF(id){
         <span>DPH celkem: <strong>${f(inv.vatTotal)}</strong></span>
       </div>
       <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:10px">
-        <span style="font-size:12px;color:#6a6050">Celkem k úhradě:</span>
-        <span style="font-size:26px;font-weight:800;color:#2d5a3d;font-family:Georgia,serif">${f(inv.total)}</span>
+        <span style="font-size:12px;color:#6a6050;font-family:inherit">Celkem k úhradě:</span>
+        <span style="font-size:26px;font-weight:800;color:#2d5a3d;font-family:inherit">${f(inv.total)}</span>
       </div>
     </div>
     ${(s.sib||s.siban)?`<div style="margin-top:14px;padding:13px 16px;background:#e8f0eb;border-radius:7px;border:1px solid rgba(45,90,61,.2);font-size:12px;color:#2d5a3d;line-height:2">
   <strong>Platební údaje</strong><br>
   ${s.sib?`Číslo účtu: <strong>${s.sib}</strong>${s.sb2?' &nbsp;·&nbsp; '+s.sb2:''}<br>`:''}
-  Variabilní symbol: <strong>${inv.number}</strong><br>
+  Variabilní symbol: <strong>${(inv.number||"").replace(/\D/g,"")}</strong><br>
   ${(inv.currency&&inv.currency!=='CZK'&&s.siban)?`IBAN: <strong>${s.siban}</strong><br>`:''}
   Způsob platby: <strong>Bankovní převod</strong>
 </div>`:''}
@@ -993,9 +993,12 @@ function expPDF(id){
       <div id="qr-pdf-box" style="display:flex;flex-direction:column;align-items:center;gap:5px">
         ${s.sib?`<div style="font-size:9px;font-weight:700;color:#9c8e7e;text-transform:uppercase;letter-spacing:.06em">QR Platba</div><div id="qr-pdf-target" style="width:80px;height:80px"></div>`:''}
       </div>
-      <div style="display:flex;gap:20px;align-items:flex-end">
-        ${s.sigData?`<div style="text-align:center"><img src="${s.sigData}" style="max-height:90px;max-width:180px"><div style="font-size:9px;color:#9c8e7e;margin-top:3px">Podpis</div></div>`:''}
-        ${s.stampData?`<div style="text-align:center"><img src="${s.stampData}" style="max-height:100px;max-width:180px"></div>`:''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        ${(s.sigData||s.stampData)?`<div style="font-size:9px;font-weight:700;color:#9c8e7e;text-transform:uppercase;letter-spacing:.06em">Razítko a podpis</div>`:''}
+        <div style="display:flex;gap:20px;align-items:flex-end">
+          ${s.sigData?`<div style="text-align:center"><img src="${s.sigData}" style="max-height:135px;max-width:270px"><div style="font-size:9px;color:#9c8e7e;margin-top:3px">Podpis</div></div>`:''}
+          ${s.stampData?`<div style="text-align:center"><img src="${s.stampData}" style="max-height:150px;max-width:270px"></div>`:''}
+        </div>
       </div>
     </div>
     ${s.sft?`<div style="margin-top:14px;font-size:10.5px;color:#9c8e7e;border-top:1px solid #e2d9cc;padding-top:10px">${s.sft}</div>`:''}
@@ -1040,7 +1043,7 @@ function expPDF(id){
 
   if(qrTarget&&s.sib){
     const qrAcc2=(inv.currency&&inv.currency!=='CZK'&&s.siban?s.siban:s.sib||'').replace(/\s/g,'');
-    const spdText='SPD*1.0*ACC:'+qrAcc2+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+(inv.number||'')+'*MSG:'+(inv.clientName||'').substring(0,35);
+    const spdText='SPD*1.0*ACC:'+qrAcc2+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+((inv.number||'').replace(/\D/g,''))+'*MSG:'+(inv.clientName||'').substring(0,35);
     const qrUrl='https://chart.googleapis.com/chart?cht=qr&chs=80x80&chl='+encodeURIComponent(spdText)+'&chco=2d5a3d&chf=bg,s,ffffff&chld=M|1';
     // Fetch QR as base64 to avoid html2canvas CORS issues
     fetch(qrUrl)
