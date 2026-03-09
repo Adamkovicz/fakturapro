@@ -157,7 +157,7 @@ tbody tr:hover td{background:var(--surface2)}
 .d-totals{padding:15px 13px;background:var(--surface2);border-top:2px solid var(--border)}
 .d-base{display:flex;justify-content:flex-end;gap:36px;font-size:13px;color:var(--text2);padding-bottom:7px}
 .d-grand{display:flex;justify-content:flex-end;align-items:baseline;gap:10px;padding-top:7px;border-top:1px solid var(--border)}
-.d-grand .dl{font-size:13px;color:var(--text2)}.d-grand .da{font-family:'Playfair Display';font-size:26px;font-weight:700;color:var(--accent)}
+.d-grand .dl{font-size:13px;color:var(--text2)}.d-grand .da{font-size:26px;font-weight:700;color:var(--accent)}
 .bank-bar{margin-top:22px;padding:14px 18px;background:var(--al);border:1px solid rgba(45,90,61,.18);border-radius:9px;font-size:13px;color:var(--accent)}
 
 /* CLIENTS */
@@ -659,6 +659,7 @@ function irow(i,act){
     ${act?`<td><div style='display:flex;gap:5px;flex-wrap:wrap'>
       <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
       <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
+      <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
     </div></td>`:''}
   </tr>`;
 }
@@ -940,7 +941,7 @@ function expPDF(id){
       <div>
         <div style="font-size:34px;font-weight:800;color:#2d5a3d;letter-spacing:-.5px;font-family:Georgia,serif">Faktura</div>
         <div style="font-size:15px;color:#6a6050;margin-top:3px;font-weight:600">${inv.number||''}</div>
-        <div style="margin-top:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40">${statusLabel}</div>
+
       </div>
       <div style="text-align:right;font-size:12px;color:#6a6050;line-height:2">
         <div>Datum vystavení: <strong style="color:#1a1710">${inv.date||''}</strong></div>
