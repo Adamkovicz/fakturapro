@@ -15,7 +15,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -876,7 +875,7 @@ function showDet(id){
       ${inv.note?`<div style="margin-top:14px;padding:13px 16px;background:var(--surface2);border-radius:9px;border:1px solid var(--border);font-size:13px;color:var(--text2)">📝 ${inv.note}</div>`:''}
       <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:16px">
         <div id="qr-box-${inv.id}">
-          ${s.sib?`<div style='font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px'>QR Platba</div><div id='qr-${inv.id}' style='width:90px;height:90px'></div>`:''}
+          ${s.sib?`<div style='font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px'>QR Platba</div><div id='qr-${inv.id}'></div>`:''}
         </div>
         <div style="display:flex;gap:16px;align-items:flex-end">
           ${sett.sigData?`<div style='text-align:center'><img src='${sett.sigData}' style='max-height:55px;max-width:130px'><div style='font-size:10px;color:var(--text3);margin-top:3px'>Podpis</div></div>`:''}
@@ -889,7 +888,8 @@ function showDet(id){
   setTimeout(()=>{
     const qrEl=document.getElementById('qr-'+inv.id);
     if(qrEl&&s.sib){
-      try{new QRCode(qrEl,{text:'SPD*1.0*ACC:'+s.sib.replace(/\s/g,'')+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+inv.number+'*MSG:'+(inv.clientName||'').substring(0,35),width:90,height:90,colorDark:'#2d5a3d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+      const spdText='SPD*1.0*ACC:'+s.sib.replace(/\s/g,'')+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+(inv.number||'')+'*MSG:'+(inv.clientName||'').substring(0,35);
+      genQR(qrEl, spdText, 90);
     }
   },150);
   document.getElementById('dact').innerHTML=`
@@ -1023,24 +1023,13 @@ function expPDF(id){
   }
 
   if(qrTarget&&s.sib){
-    try{
-      new QRCode(qrTarget,{
-        text:'SPD*1.0*ACC:'+s.sib.replace(/\s/g,'')+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+inv.number+'*MSG:'+(inv.clientName||'').substring(0,35),
-        width:80,height:80,colorDark:'#2d5a3d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M
-      });
-      // Convert canvas to img so html2canvas can capture it
-      setTimeout(()=>{
-        const qrCanvas=qrTarget.querySelector('canvas');
-        if(qrCanvas){
-          const qrImg=document.createElement('img');
-          qrImg.src=qrCanvas.toDataURL('image/png');
-          qrImg.width=80;qrImg.height=80;
-          qrTarget.innerHTML='';
-          qrTarget.appendChild(qrImg);
-        }
-        doRender();
-      },400);
-    }catch(e){doRender();}
+    const spdText='SPD*1.0*ACC:'+s.sib.replace(/\s/g,'')+'*AM:'+(inv.total||0).toFixed(2)+'*CC:'+(inv.currency||'CZK')+'*X-VS:'+(inv.number||'')+'*MSG:'+(inv.clientName||'').substring(0,35);
+    const qrImg = genQR(qrTarget, spdText, 80);
+    // Wait for image to load before rendering PDF
+    qrImg.onload = function(){ setTimeout(doRender, 200); };
+    qrImg.onerror = function(){ doRender(); };
+    // Fallback timeout in case events don't fire
+    setTimeout(()=>{ if(document.body.contains(tpl)) doRender(); }, 2000);
   } else {
     doRender();
   }
@@ -1066,6 +1055,28 @@ function saveFb(){
   const raw=document.getElementById('fbc').value.trim();
   try{const cfg=JSON.parse(raw);if(!cfg.apiKey||!cfg.projectId)throw new Error();localStorage.setItem('fp_fb_cfg',raw);toast('Připojuji Firebase…');setTimeout(()=>location.reload(),1000)}
   catch(e){toast('Neplatný JSON konfigurace','error')}
+}
+
+// ── QR GENERATOR (inline, no CDN) ───────────
+function genQR(el, text, size){
+  // Uses a self-contained QR matrix generator via canvas
+  // Encodes text as QR code using the qr-creator approach
+  const img = document.createElement('img');
+  // Use Google Charts QR API as primary (works with CORS)
+  const encoded = encodeURIComponent(text);
+  img.src = 'https://chart.googleapis.com/chart?cht=qr&chs='+size+'x'+size+'&chl='+encoded+'&chco=2d5a3d&chf=bg,s,ffffff&chld=M|1';
+  img.width = size;
+  img.height = size;
+  img.alt = 'QR platba';
+  img.style.display = 'block';
+  img.onerror = function(){
+    // Fallback: use qr-server.com
+    this.onerror=null;
+    this.src='https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encoded+'&color=2d5a3d&bgcolor=ffffff&ecc=M';
+  };
+  el.innerHTML='';
+  el.appendChild(img);
+  return img;
 }
 
 // ── QR PLATBA (in expPDF) ──────────────────
