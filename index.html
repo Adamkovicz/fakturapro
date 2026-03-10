@@ -406,6 +406,25 @@ tbody tr:hover td{background:var(--surface2)}
   </main>
 </div>
 
+<!-- EMAIL CONFIRM MODAL -->
+<div class="mo" id="email-modal">
+  <div class="modal modal-sm">
+    <div class="mh"><h3 class="mt">Odeslat fakturu emailem</h3><button class="mc" onclick="cm('email-modal')">×</button></div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px">
+      Chystáš se odeslat fakturu <strong id="em-inv-num"></strong> odběrateli<br>
+      <strong id="em-client-name"></strong> na adresu<br>
+      <strong id="em-client-email" style="color:var(--accent)"></strong>
+    </div>
+    <div class="field"><label>Předmět</label><input id="em-subject" type="text"></div>
+    <div class="field"><label>Text zprávy</label><textarea id="em-body" style="min-height:160px;font-size:13px;line-height:1.6"></textarea></div>
+    <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📎 PDF faktury přilož ručně v emailovém klientu po otevření.</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-g" onclick="cm('email-modal')">Zrušit</button>
+      <button class="btn btn-p" id="em-send-btn" onclick="confirmSendEmail()">✉️ Otevřít v emailu</button>
+    </div>
+  </div>
+</div>
+
 <!-- INV MODAL -->
 <div class="mo" id="im">
   <div class="modal">
@@ -660,6 +679,7 @@ function irow(i,act){
       <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
       <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
       <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
+      <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
     </div></td>`:''}
   </tr>`;
 }
@@ -906,6 +926,7 @@ function showDet(id){
   document.getElementById('dact').innerHTML=`
     <select class='status-sel status-${inv.status||"pending"}' onchange='changeStatus("${inv.id}",this.value);showDet("${inv.id}")' style='padding:8px 28px 8px 12px;font-size:13px'><option value='pending' ${inv.status==="pending"?"selected":""}>❌ Neuhrazeno</option><option value='paid' ${inv.status==="paid"?"selected":""}>✅ Uhrazeno</option><option value='overdue' ${inv.status==="overdue"?"selected":""}>⚠️ Po splatnosti</option></select>
     <button class="btn btn-o" onclick="openIM(invs.find(x=>x.id==='${inv.id}'))">✏️ Upravit</button>
+    <button class="btn btn-o" onclick="openEmailModal('${inv.id}')">✉️ Odeslat email</button>
     <button class="btn btn-p" onclick="expPDF('${inv.id}')">📄 Export PDF</button>
     <button class="btn btn-d" onclick="delInv('${inv.id}')">🗑 Smazat</button>`;
 }
@@ -1182,6 +1203,35 @@ let tt;
 function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+type;clearTimeout(tt);tt=setTimeout(()=>{el.className=''},3000)}
 
 if(!useFb)document.getElementById('demo-banner').style.display='block';
+
+// ── EMAIL (mailto) ───────────────────────────
+let emInvId=null;
+
+function openEmailModal(invId){
+  const inv=invs.find(i=>i.id===invId); if(!inv)return;
+  const cli=clis.find(c=>c.id===inv.clientId)||{};
+  if(!cli.email){toast('Klient nemá vyplněný email','error');return;}
+  emInvId=invId;
+  const vs=(inv.number||'').replace(/\D/g,'');
+  const total=fm(inv.total,inv.currency);
+  document.getElementById('em-inv-num').textContent=inv.number||'';
+  document.getElementById('em-client-name').textContent=cli.name||'';
+  document.getElementById('em-client-email').textContent=cli.email||'';
+  document.getElementById('em-subject').value=`Faktura č. ${inv.number} – ${sett.sn||''}`;
+  document.getElementById('em-body').value=`Dobrý den, ${cli.name||''},\n\nv příloze zasílám fakturu č. ${inv.number} na částku ${total} se splatností ${inv.dueDate||''}.\nVariabilní symbol: ${vs}\n\n${inv.note?'Poznámka: '+inv.note+'\n\n':''}S pozdravem,\n${sett.sn||''}\n${sett.se||''}`;
+  document.getElementById('email-modal').classList.add('open');
+}
+
+function confirmSendEmail(){
+  const inv=invs.find(i=>i.id===emInvId); if(!inv)return;
+  const cli=clis.find(c=>c.id===inv.clientId)||{};
+  const subject=encodeURIComponent(document.getElementById('em-subject').value);
+  const body=encodeURIComponent(document.getElementById('em-body').value);
+  const email=cli.email||'';
+  cm('email-modal');
+  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+  toast('Otevírám emailový klient…','success');
+}
 </script>
 </body>
 </html>
