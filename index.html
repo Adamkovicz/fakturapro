@@ -248,7 +248,7 @@ tbody tr:hover td{background:var(--surface2)}
   .ir input:nth-child(3),.ir input:nth-child(4){display:none}
   .inv-table-wrap{display:none}
   .inv-cards{display:block!important}
-  .fb{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .fb{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;padding-right:16px;-webkit-overflow-scrolling:touch}
   .fb::-webkit-scrollbar{display:none}
   .ft{white-space:nowrap;flex-shrink:0}
 }
@@ -699,7 +699,7 @@ function icard(i){
         <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
         <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
       </div>
-      <select style="width:100%;font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer" onchange='changeStatus("${i.id}",this.value)'>
+      <select style="width:100%;font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#333;font-family:inherit;cursor:pointer;appearance:auto;-webkit-appearance:auto;background-image:none" onchange='changeStatus("${i.id}",this.value)'>
         <option value='pending' ${i.status==="pending"?"selected":""}>❌ Neuhrazeno</option>
         <option value='paid' ${i.status==="paid"?"selected":""}>✅ Uhrazeno</option>
         <option value='overdue' ${i.status==="overdue"?"selected":""}>⚠️ Po splatnosti</option>
