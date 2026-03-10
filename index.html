@@ -320,7 +320,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
       <div class="tc">
         <div class="tb-bar"><span class="tb-title">Poslední faktury</span><button class="btn btn-g btn-sm" onclick="sp('invs')">Zobrazit vše →</button></div>
-        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Splatnost</th><th style="text-align:right;min-width:110px;padding-right:16px">Částka</th><th>Stav</th></tr></thead><tbody id="rtb"></tbody></table>
+        <div style="overflow-x:auto"><table style="min-width:0;width:100%"><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Splatnost</th><th style="text-align:right;padding-right:12px">Částka</th><th class="hm">Stav</th></tr></thead><tbody id="rtb"></tbody></table></div>
       </div>
     </div>
 
@@ -679,14 +679,14 @@ function rInvs(){
 }
 function icard(i){
   const stLabels={paid:'✅ Uhrazeno',pending:'❌ Neuhrazeno',overdue:'⚠️ Po splatnosti'};
-  const stColors={paid:'var(--green)',pending:'#e05252',overdue:'#c17f3a'};
+  const stColors={paid:'#2d7a3d',pending:'#e05252',overdue:'#c17f3a'};
   return`<div class="inv-card">
     <div class="inv-card-top">
       <div>
         <div class="inv-card-num">${i.number||'—'}</div>
         <div class="inv-card-client">${i.clientName||'—'}</div>
       </div>
-      <span style="font-size:11.5px;font-weight:600;color:${stColors[i.status]||'var(--text3)'}">${stLabels[i.status]||'—'}</span>
+      <span style="font-size:11px;font-weight:700;color:${stColors[i.status]||'var(--text3)'};white-space:nowrap">${stLabels[i.status]||'—'}</span>
     </div>
     <div class="inv-card-row">
       <div class="inv-card-amount">${fm(i.total,i.currency)}</div>
@@ -696,7 +696,8 @@ function icard(i){
       <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
       <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
       <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
-      <select class='status-sel status-${i.status||"draft"}' style="font-size:11px;padding:4px 6px;height:auto" onchange='changeStatus("${i.id}",this.value)'>
+      <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
+      <select class='status-sel status-${i.status||"draft"}' style="font-size:11px;padding:3px 5px;height:28px;border-radius:6px" onchange='changeStatus("${i.id}",this.value)'>
         <option value='pending' ${i.status==="pending"?"selected":""}>❌ Neuhrazeno</option>
         <option value='paid' ${i.status==="paid"?"selected":""}>✅ Uhrazeno</option>
         <option value='overdue' ${i.status==="overdue"?"selected":""}>⚠️ Po splatnosti</option>
@@ -718,7 +719,7 @@ function irow(i,act){
     ${act?`<td class='hm' style='color:var(--text2)'>${i.date||''}</td>`:''}
     <td class='hm' style='color:${i.status==="overdue"?"var(--red)":"var(--text2)"}'>${i.dueDate||''}</td>
     <td style="text-align:right;white-space:nowrap;padding-right:16px"><strong>${fm(i.total,i.currency)}</strong></td>
-    <td>${sel}</td>
+    <td class='${act?"":"hm"}'>${sel}</td>
     ${act?`<td><div style='display:flex;gap:5px;flex-wrap:wrap'>
       <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
       <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
