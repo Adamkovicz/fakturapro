@@ -692,12 +692,14 @@ function icard(i){
       <div class="inv-card-amount">${fm(i.total,i.currency)}</div>
       <div class="inv-card-date">Splatnost: ${i.dueDate||'—'}</div>
     </div>
-    <div class="inv-card-actions">
-      <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
-      <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
-      <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
-      <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
-      <select class='status-sel status-${i.status||"draft"}' style="font-size:11px;padding:3px 5px;height:28px;border-radius:6px" onchange='changeStatus("${i.id}",this.value)'>
+    <div class="inv-card-actions" style="flex-direction:column;gap:8px">
+      <div style="display:flex;gap:6px">
+        <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
+        <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
+        <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
+        <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
+      </div>
+      <select style="width:100%;font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer" onchange='changeStatus("${i.id}",this.value)'>
         <option value='pending' ${i.status==="pending"?"selected":""}>❌ Neuhrazeno</option>
         <option value='paid' ${i.status==="paid"?"selected":""}>✅ Uhrazeno</option>
         <option value='overdue' ${i.status==="overdue"?"selected":""}>⚠️ Po splatnosti</option>
