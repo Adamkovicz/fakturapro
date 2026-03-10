@@ -420,7 +420,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📎 PDF faktury přilož ručně v emailovém klientu po otevření.</div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
       <button class="btn btn-g" onclick="cm('email-modal')">Zrušit</button>
-      <button class="btn btn-p" id="em-send-btn" onclick="confirmSendEmail()">✉️ Otevřít v emailu</button>
+      <a id="em-mailto-link" href="#" class="btn btn-p" onclick="cm('email-modal')" style="text-decoration:none">✉️ Otevřít v emailu</a>
     </div>
   </div>
 </div>
@@ -1219,18 +1219,16 @@ function openEmailModal(invId){
   document.getElementById('em-client-email').textContent=cli.email||'';
   document.getElementById('em-subject').value=`Faktura č. ${inv.number} – ${sett.sn||''}`;
   document.getElementById('em-body').value=`Dobrý den, ${cli.name||''},\n\nv příloze zasílám fakturu č. ${inv.number} na částku ${total} se splatností ${inv.dueDate||''}.\nVariabilní symbol: ${vs}\n\n${inv.note?'Poznámka: '+inv.note+'\n\n':''}S pozdravem,\n${sett.sn||''}\n${sett.se||''}`;
+  // Update mailto link href whenever subject/body changes
+  function updateHref(){
+    const s=encodeURIComponent(document.getElementById('em-subject').value);
+    const b=encodeURIComponent(document.getElementById('em-body').value);
+    document.getElementById('em-mailto-link').href='mailto:'+cli.email+'?subject='+s+'&body='+b;
+  }
+  updateHref();
+  document.getElementById('em-subject').oninput=updateHref;
+  document.getElementById('em-body').oninput=updateHref;
   document.getElementById('email-modal').classList.add('open');
-}
-
-function confirmSendEmail(){
-  const inv=invs.find(i=>i.id===emInvId); if(!inv)return;
-  const cli=clis.find(c=>c.id===inv.clientId)||{};
-  const subject=encodeURIComponent(document.getElementById('em-subject').value);
-  const body=encodeURIComponent(document.getElementById('em-body').value);
-  const email=cli.email||'';
-  cm('email-modal');
-  const a=document.createElement('a');a.href='mailto:'+email+'?subject='+subject+'&body='+body;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  toast('Otevírám emailový klient…','success');
 }
 </script>
 </body>
