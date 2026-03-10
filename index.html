@@ -1229,7 +1229,7 @@ function confirmSendEmail(){
   const body=encodeURIComponent(document.getElementById('em-body').value);
   const email=cli.email||'';
   cm('email-modal');
-  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+  const a=document.createElement('a');a.href='mailto:'+email+'?subject='+subject+'&body='+body;document.body.appendChild(a);a.click();document.body.removeChild(a);
   toast('Otevírám emailový klient…','success');
 }
 </script>
