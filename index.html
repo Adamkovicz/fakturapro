@@ -1229,6 +1229,8 @@ function openEmailModal(invId){
   document.getElementById('email-modal').classList.add('open');
 }
 function confirmSendEmail(){
+  toast('⚙️ Ve vývoji — bude řešeno později','error');
+  return;
   const inv=invs.find(i=>i.id===emInvId); if(!inv)return;
   const cli=clis.find(c=>c.id===inv.clientId)||{};
   const subject=document.getElementById('em-subject').value;
