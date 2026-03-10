@@ -246,7 +246,22 @@ tbody tr:hover td{background:var(--surface2)}
   .ih,.ir{grid-template-columns:2.5fr 1fr 1.2fr .28fr}
   .ih span:nth-child(3),.ih span:nth-child(4){display:none}
   .ir input:nth-child(3),.ir input:nth-child(4){display:none}
+  .inv-table-wrap{display:none}
+  .inv-cards{display:block!important}
+  .fb{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  .fb::-webkit-scrollbar{display:none}
+  .ft{white-space:nowrap;flex-shrink:0}
 }
+.inv-cards{display:none}
+.inv-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;margin-bottom:10px;box-shadow:var(--sh)}
+.inv-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.inv-card-num{font-weight:700;color:var(--accent);font-size:14px}
+.inv-card-client{font-size:13px;color:var(--text2);margin-bottom:6px}
+.inv-card-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.inv-card-amount{font-weight:700;font-size:15px;color:var(--text)}
+.inv-card-date{font-size:12px;color:var(--text3)}
+.inv-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.inv-card-actions .btn{font-size:12px;padding:5px 10px}
 .chip{display:inline-flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11.5px;color:var(--text2);font-weight:500}
 </style>
 </head>
@@ -323,7 +338,8 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="sb"><span>🔍</span><input placeholder="Hledat fakturu, klienta…" oninput="doS(this.value)"></div>
           <span class="chip" id="icount">0 faktur</span>
         </div>
-        <table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Vystaveno</th><th class="hm">Splatnost</th><th style="text-align:right;min-width:110px;padding-right:16px">Částka</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="itb"></tbody></table>
+        <div class="inv-table-wrap"><table><thead><tr><th>Číslo</th><th>Klient</th><th class="hm">Vystaveno</th><th class="hm">Splatnost</th><th style="text-align:right;min-width:110px;padding-right:16px">Částka</th><th>Stav</th><th>Akce</th></tr></thead><tbody id="itb"></tbody></table></div>
+        <div class="inv-cards" id="icards"></div>
       </div>
     </div>
 
@@ -658,6 +674,34 @@ function rInvs(){
   document.getElementById('icount').textContent=l.length+' faktur';
   const tb=document.getElementById('itb');
   tb.innerHTML=l.length?l.map(i=>irow(i,true)).join(''):'<tr><td colspan="7"><div class="es"><div class="ei">🔍</div><div class="ett">Žádné výsledky</div></div></td></tr>';
+  const cards=document.getElementById('icards');
+  if(cards)cards.innerHTML=l.length?l.map(i=>icard(i)).join(''):'<div class="es"><div class="ei">🔍</div><div class="ett">Žádné výsledky</div></div>';
+}
+function icard(i){
+  const stLabels={paid:'✅ Uhrazeno',pending:'❌ Neuhrazeno',overdue:'⚠️ Po splatnosti'};
+  const stColors={paid:'var(--green)',pending:'var(--red)',overdue:'#c17f3a'};
+  return`<div class="inv-card">
+    <div class="inv-card-top">
+      <div class="inv-card-num">${i.number||'—'}</div>
+      <span style="font-size:12px;font-weight:600;color:${stColors[i.status]||'var(--text3)'}">${stLabels[i.status]||'—'}</span>
+    </div>
+    <div class="inv-card-client">${i.clientName||'—'}</div>
+    <div class="inv-card-row">
+      <div class="inv-card-amount">${fm(i.total,i.currency)}</div>
+      <div class="inv-card-date">Splatnost: ${i.dueDate||'—'}</div>
+    </div>
+    <select class='status-sel status-${i.status||"draft"}' style="width:100%;margin-bottom:0" onchange='changeStatus("${i.id}",this.value)'>
+      <option value='pending' ${i.status==="pending"?"selected":""}>❌ Neuhrazeno</option>
+      <option value='paid' ${i.status==="paid"?"selected":""}>✅ Uhrazeno</option>
+      <option value='overdue' ${i.status==="overdue"?"selected":""}>⚠️ Po splatnosti</option>
+    </select>
+    <div class="inv-card-actions">
+      <button class='btn btn-g btn-sm' onclick='showDet("${i.id}")'>Detail</button>
+      <button class='btn btn-g btn-sm' onclick='openIM(invs.find(x=>x.id==="${i.id}"))'>Upravit</button>
+      <button class='btn btn-p btn-sm' onclick='expPDF("${i.id}")'>📄 PDF</button>
+      <button class='btn btn-o btn-sm' onclick='openEmailModal("${i.id}")'>✉️</button>
+    </div>
+  </div>`;
 }
 const bmap={paid:'b-p',pending:'b-o',overdue:'b-ov',draft:'b-d'};
 const blab={paid:'Uhrazeno',pending:'Neuhrazeno',overdue:'Po splatnosti',draft:'Koncept'};
@@ -1103,20 +1147,35 @@ function expPDF(id){
 }
 
 // ── SETTINGS ─────────────────────────────────
-function loadSett(){
-  sett=JSON.parse(localStorage.getItem(lk('sett'))||'{}');
+async function loadSett(){
+  // Try Firebase first, fallback to localStorage
+  let saved={};
+  if(useFb&&db){
+    try{
+      const doc=await db.collection('users').doc(cu.uid).collection('settings').doc('main').get();
+      if(doc.exists)saved=doc.data();
+    }catch(e){}
+  }
+  if(!Object.keys(saved).length) saved=JSON.parse(localStorage.getItem(lk('sett'))||'{}');
+  sett=saved;
   ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','sft'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=sett[f]||''});
   const du=document.getElementById('sdu');if(du&&!sett.sdu)du.value='14';
-  // Reset snum if it looks like old format (>9999) or month doesn't match
+  // Reset snum if old format (>9999) or new month
   const ym=curYYYYMM();
   if((sett.snumMonth||'')!==ym||(parseInt(sett.snum)||0)>9999){sett.snum=1;sett.snumMonth=ym;}
   const snumEl=document.getElementById('snum');if(snumEl)snumEl.value=sett.snum||1;
   setTimeout(()=>{updPrev();loadImgPrev();},50);
 }
-function saveSett(){
+async function saveSett(){
   ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','sft'].forEach(f=>{sett[f]=document.getElementById(f)?.value||''});
   sett.snum=parseInt(document.getElementById('snum')?.value)||1;
-  localStorage.setItem(lk('sett'),JSON.stringify(sett));toast('Nastavení uloženo ✓','success');
+  localStorage.setItem(lk('sett'),JSON.stringify(sett));
+  if(useFb&&db){
+    try{
+      await db.collection('users').doc(cu.uid).collection('settings').doc('main').set(sett);
+    }catch(e){console.error('Settings Firebase save error',e);}
+  }
+  toast('Nastavení uloženo ✓','success');
 }
 function saveFb(){
   const raw=document.getElementById('fbc').value.trim();
@@ -1208,6 +1267,10 @@ async function bumpNum(){
   if((sett.snumMonth||'')!==ym){sett.snumMonth=ym;sett.snum=2;}
   else sett.snum=(parseInt(sett.snum)||1)+1;
   localStorage.setItem(lk('sett'),JSON.stringify(sett));
+  if(useFb&&db){
+    try{await db.collection('users').doc(cu.uid).collection('settings').doc('main').set(sett);}
+    catch(e){}
+  }
 }
 function addD(ds,d){const x=new Date(ds);x.setDate(x.getDate()+d);return x.toISOString().split('T')[0]}
 let tt;
