@@ -358,12 +358,11 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="field"><label>Splatnost (dní)</label><input id="sdu" type="number" value="14"></div>
           <div class="field s2" style="background:var(--al);border:1.5px solid rgba(45,90,61,.15);border-radius:var(--r);padding:14px 16px">
             <label style="color:var(--accent);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">&#x1F522; Číslování faktur</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-              <div class="field" style="margin:0"><label>Prefix</label><input id="spx" placeholder="2025-" value="2025-" oninput="updPrev()"></div>
-              <div class="field" style="margin:0"><label>Další číslo</label><input id="snum" type="number" placeholder="1" value="1" oninput="updPrev()"></div>
-              <div class="field" style="margin:0"><label>Počet číslic</label><select id="spad" onchange="updPrev()"><option value="3">001</option><option value="2">01</option><option value="1">1</option><option value="4">0001</option></select></div>
+            <div style="margin-top:10px;font-size:13px;color:var(--text2);line-height:1.6">Čísla faktur se generují automaticky ve formátu <strong>RRRRMMXXXX</strong> (rok + měsíc + pořadové číslo v měsíci). Pořadové číslo se na začátku každého měsíce automaticky resetuje.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+              <div class="field" style="margin:0"><label>Příští pořadové č.</label><input id="snum" type="number" placeholder="1" value="1" oninput="updPrev()"></div>
+              <div class="field" style="margin:0;display:flex;align-items:flex-end"><div style="font-size:13px;color:var(--accent)">Náhled: <strong id="num-prev"></strong></div></div>
             </div>
-            <div style="margin-top:10px;font-size:13px;color:var(--accent)">Náhled příštího čísla: <strong id="num-prev">2025-001</strong></div>
           </div>
           <div class="field s2"><label>Text patičky / DPH doložka</label><textarea id="sft" placeholder="Nejsem plátce DPH."></textarea></div>
         </div>
@@ -1188,21 +1187,26 @@ function loadImgPrev(){
 }
 
 // ── HELPERS ──────────────────────────────────
+function curYYYYMM(){
+  const d=new Date();
+  return String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0');
+}
 function genN(){
-  const pfx=sett.spx||new Date().getFullYear()+'-';
-  const pad=parseInt(sett.spad)||3;
+  const ym=curYYYYMM();
+  if((sett.snumMonth||'')!==ym){sett.snumMonth=ym;sett.snum=1;}
   const n=parseInt(sett.snum)||1;
-  return pfx+String(n).padStart(pad,'0');
+  return ym+String(n).padStart(4,'0');
 }
 function updPrev(){
-  const pfx=document.getElementById('spx')?.value||new Date().getFullYear()+'-';
-  const pad=parseInt(document.getElementById('spad')?.value)||3;
+  const ym=curYYYYMM();
   const n=parseInt(document.getElementById('snum')?.value)||1;
   const el=document.getElementById('num-prev');
-  if(el)el.textContent=pfx+String(n).padStart(pad,'0');
+  if(el)el.textContent=ym+String(n).padStart(4,'0');
 }
 async function bumpNum(){
-  sett.snum=(parseInt(sett.snum)||1)+1;
+  const ym=curYYYYMM();
+  if((sett.snumMonth||'')!==ym){sett.snumMonth=ym;sett.snum=2;}
+  else sett.snum=(parseInt(sett.snum)||1)+1;
   localStorage.setItem(lk('sett'),JSON.stringify(sett));
 }
 function addD(ds,d){const x=new Date(ds);x.setDate(x.getDate()+d);return x.toISOString().split('T')[0]}
