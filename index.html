@@ -417,10 +417,10 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="field"><label>Předmět</label><input id="em-subject" type="text"></div>
     <div class="field"><label>Text zprávy</label><textarea id="em-body" style="min-height:160px;font-size:13px;line-height:1.6"></textarea></div>
-    <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📎 PDF faktury přilož ručně v emailovém klientu po otevření.</div>
+    <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📎 Na mobilu se otevře nativní sdílení s PDF. Na PC se PDF stáhne a otevře email.</div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
       <button class="btn btn-g" onclick="cm('email-modal')">Zrušit</button>
-      <a id="em-mailto-link" href="#" class="btn btn-p" onclick="cm('email-modal')" style="text-decoration:none">✉️ Otevřít v emailu</a>
+      <button class="btn btn-p" id="em-send-btn" onclick="confirmSendEmail()">✉️ Odeslat s PDF</button>
     </div>
   </div>
 </div>
@@ -1053,8 +1053,15 @@ function expPDF(id){
             pos+=pH;
           }
         }
-        pdf.save('faktura-'+inv.number+'.pdf');
-        toast('PDF exportováno ✓','success');
+        if(window._pdfBlobCallback){
+          const blob=new Blob([pdf.output('arraybuffer')],{type:'application/pdf'});
+          const cb=window._pdfBlobCallback;
+          window._pdfBlobCallback=null;
+          cb(blob,'faktura-'+inv.number+'.pdf');
+        } else {
+          pdf.save('faktura-'+inv.number+'.pdf');
+          toast('PDF exportováno ✓','success');
+        }
       }).catch(e=>{
         document.body.removeChild(tpl);
         toast('Chyba při generování PDF','error');
@@ -1219,17 +1226,38 @@ function openEmailModal(invId){
   document.getElementById('em-client-email').textContent=cli.email||'';
   document.getElementById('em-subject').value=`Faktura č. ${inv.number} – ${sett.sn||''}`;
   document.getElementById('em-body').value=`Dobrý den, ${cli.name||''},\n\nv příloze zasílám fakturu č. ${inv.number} na částku ${total} se splatností ${inv.dueDate||''}.\nVariabilní symbol: ${vs}\n\n${inv.note?'Poznámka: '+inv.note+'\n\n':''}S pozdravem,\n${sett.sn||''}\n${sett.se||''}`;
-  // Update mailto link href whenever subject/body changes
-  function updateHref(){
-    const s=encodeURIComponent(document.getElementById('em-subject').value);
-    const b=encodeURIComponent(document.getElementById('em-body').value);
-    document.getElementById('em-mailto-link').href='mailto:'+cli.email+'?subject='+s+'&body='+b;
-  }
-  updateHref();
-  document.getElementById('em-subject').oninput=updateHref;
-  document.getElementById('em-body').oninput=updateHref;
   document.getElementById('email-modal').classList.add('open');
 }
+function confirmSendEmail(){
+  const inv=invs.find(i=>i.id===emInvId); if(!inv)return;
+  const cli=clis.find(c=>c.id===inv.clientId)||{};
+  const subject=document.getElementById('em-subject').value;
+  const body=document.getElementById('em-body').value;
+  const btn=document.getElementById('em-send-btn');
+  btn.disabled=true; btn.textContent='Generuji PDF…';
+
+  window._pdfBlobCallback=(blob, filename)=>{
+    btn.disabled=false; btn.textContent='✉️ Odeslat s PDF';
+    const file=new File([blob], filename, {type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({title:subject, text:body, files:[file]})
+        .then(()=>{ cm('email-modal'); toast('Sdíleno ✓','success'); })
+        .catch(e=>{ if(e.name!=='AbortError') toast('Chyba sdílení','error'); });
+    } else {
+      // Fallback: download PDF + open mailto
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+      setTimeout(()=>{
+        URL.revokeObjectURL(url);
+        window.location.href='mailto:'+cli.email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body+'\n\n[Přiložte stažené PDF]');
+      }, 1000);
+      cm('email-modal');
+      toast('PDF staženo — přilož do emailu','success');
+    }
+  };
+  expPDF(emInvId);
+}
+
 </script>
 </body>
 </html>
