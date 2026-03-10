@@ -417,7 +417,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="field"><label>Předmět</label><input id="em-subject" type="text"></div>
     <div class="field"><label>Text zprávy</label><textarea id="em-body" style="min-height:160px;font-size:13px;line-height:1.6"></textarea></div>
-    <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📎 PDF se automaticky stáhne a otevře se Centrum Mail s předvyplněným emailem. PDF pak jen přilož.</div>
+    <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:7px;padding:9px 12px;margin-bottom:14px">📧 Email s PDF přílohou bude odeslán přímo z aplikace.</div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
       <button class="btn btn-g" onclick="cm('email-modal')">Zrušit</button>
       <button class="btn btn-p" id="em-send-btn" onclick="confirmSendEmail()">✉️ Odeslat s PDF</button>
@@ -1237,23 +1237,45 @@ function confirmSendEmail(){
   btn.disabled=true; btn.textContent='Generuji PDF…';
 
   window._pdfBlobCallback=(blob, filename)=>{
-    btn.disabled=false; btn.textContent='✉️ Odeslat s PDF';
-    const file=new File([blob], filename, {type:'application/pdf'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({title:subject, text:body, files:[file]})
-        .then(()=>{ cm('email-modal'); toast('Sdíleno ✓','success'); })
-        .catch(e=>{ if(e.name!=='AbortError') toast('Chyba sdílení','error'); });
-    } else {
-      // Fallback: download PDF + open Centrum Mail with prefilled compose
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download=filename;a.click();
-      setTimeout(()=>{ URL.revokeObjectURL(url); }, 5000);
-      // Open Centrum Mail compose window
-      const cmUrl='https://centrum.cz/posta/nova-zprava/?to='+encodeURIComponent(cli.email)+'&subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body+'\n\n[Přiložte stažené PDF: '+filename+']');
-      setTimeout(()=>{ window.open(cmUrl,'_blank'); }, 800);
-      cm('email-modal');
-      toast('PDF staženo · otevírám Centrum Mail…','success');
-    }
+    btn.textContent='Odesílám…';
+    // Convert blob to base64
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const b64=reader.result.split(',')[1];
+      const senderEmail=sett.se||'adam.antonin@centrum.cz';
+      const senderName=sett.sn||'FakturaPro';
+      fetch('https://api.brevo.com/v3/smtp/email',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'api-key':'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'
+        },
+        body:JSON.stringify({
+          sender:{name:senderName, email:senderEmail},
+          to:[{email:cli.email, name:cli.name||''}],
+          subject:subject,
+          textContent:body,
+          attachment:[{content:b64, name:filename}]
+        })
+      })
+      .then(r=>r.json())
+      .then(data=>{
+        btn.disabled=false; btn.textContent='✉️ Odeslat s PDF';
+        if(data.messageId||data.message==='OK'){
+          cm('email-modal');
+          toast('Email odeslán ✓','success');
+        } else {
+          console.error(data);
+          toast('Chyba: '+(data.message||'Nepodařilo se odeslat'),'error');
+        }
+      })
+      .catch(err=>{
+        btn.disabled=false; btn.textContent='✉️ Odeslat s PDF';
+        console.error(err);
+        toast('Chyba při odesílání emailu','error');
+      });
+    };
+    reader.readAsDataURL(blob);
   };
   expPDF(emInvId);
 }
