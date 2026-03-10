@@ -1105,17 +1105,17 @@ function expPDF(id){
 // ── SETTINGS ─────────────────────────────────
 function loadSett(){
   sett=JSON.parse(localStorage.getItem(lk('sett'))||'{}');
-  ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','spx','sft'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=sett[f]||''});
+  ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','sft'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=sett[f]||''});
   const du=document.getElementById('sdu');if(du&&!sett.sdu)du.value='14';
-  const px=document.getElementById('spx');if(px&&!sett.spx)px.value=new Date().getFullYear()+'-';
+  // Reset snum if it looks like old format (>9999) or month doesn't match
+  const ym=curYYYYMM();
+  if((sett.snumMonth||'')!==ym||(parseInt(sett.snum)||0)>9999){sett.snum=1;sett.snumMonth=ym;}
   const snumEl=document.getElementById('snum');if(snumEl)snumEl.value=sett.snum||1;
-  const spadEl=document.getElementById('spad');if(spadEl)spadEl.value=sett.spad||'3';
   setTimeout(()=>{updPrev();loadImgPrev();},50);
 }
 function saveSett(){
-  ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','spx','sft'].forEach(f=>{sett[f]=document.getElementById(f)?.value||''});
+  ['sn','si','sd','st','sa','se','sw','sib','siban','sb2','sdu','sft'].forEach(f=>{sett[f]=document.getElementById(f)?.value||''});
   sett.snum=parseInt(document.getElementById('snum')?.value)||1;
-  sett.spad=document.getElementById('spad')?.value||'3';
   localStorage.setItem(lk('sett'),JSON.stringify(sett));toast('Nastavení uloženo ✓','success');
 }
 function saveFb(){
